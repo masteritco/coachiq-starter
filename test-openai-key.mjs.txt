@@ -1,0 +1,17 @@
+const apiKey = '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'; // 🔑 Replace with your actual key
+
+const response = await fetch('https://api.openai.com/v1/models', {
+  headers: {
+    'Authorization': `Bearer ${apiKey}`
+  }
+});
+
+if (!response.ok) {
+  console.error('❌ API Key rejected. Status:', response.status);
+  const err = await response.text();
+  console.error('Response:', err);
+} else {
+  const data = await response.json();
+  console.log('✅ API Key is valid! Available models:');
+  console.log(data.data.map(model => model.id).slice(0, 5));
+}

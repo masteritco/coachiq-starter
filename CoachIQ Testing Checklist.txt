@@ -1,0 +1,166 @@
+🧪 CoachIQ Testing Checklist
+🌐 Live App URL
+https://visionary-cactus-890825.netlify.app
+
+📋 Complete Testing Checklist
+🔐 Authentication Testing
+ Sign Up Flow
+
+Click "Sign In" button
+Switch to "Sign Up" tab
+Create account with valid email/password
+Verify successful account creation
+Check if redirected to main app
+ Sign In Flow
+
+Sign out and sign back in
+Test with correct credentials
+Test with incorrect credentials (should show error)
+🎯 Core Interview Flow
+Job Title Input
+Enter job title: "Software Engineer"
+Try popular job suggestions (click buttons)
+Test with custom job title: "Marketing Manager"
+Verify "Start" button works
+Resume Upload (Optional)
+Skip Resume: Click "Skip & Use Generic Questions"
+Upload Resume:
+Try .txt file with sample resume text
+Try .docx file (if available)
+Verify file preview shows
+Click "Generate Personalized Questions"
+Interview Questions
+ Question Display:
+
+Progress bar shows correctly
+Question number updates (1 of X)
+Question text is readable
+ Answer Input:
+
+Type short answer (< 50 characters)
+Type medium answer (100-200 characters)
+Type detailed answer (300+ characters)
+Submit each answer
+ AI Feedback:
+
+Wait for "Getting AI feedback..." loading
+Verify feedback appears
+Check score (1-10 scale)
+Verify feedback quality
+Interview Completion
+Complete all questions in interview
+Verify results page loads
+Check overall score calculation
+Review individual question scores
+💎 Subscription Tier Testing
+Free Plan (Default)
+Limits: 4 questions per interview
+Features: Basic feedback, no PDF
+Usage: Try multiple interviews to test monthly limit
+Upgrade Flow
+ Click subscription tier in header
+
+ View pricing modal
+
+ Test Billing Toggle:
+
+Switch between Monthly/Yearly
+Verify price changes
+Check savings calculation
+ Mock Upgrade (Starter Plan):
+
+Click "Upgrade to Starter"
+Should redirect to mock Stripe checkout
+Return to app (simulated success)
+Pro Plan Features (After Mock Upgrade)
+More Questions: 8 questions per interview
+Follow-up Questions: AI generates follow-ups
+PDF Reports: Download button works
+Unlimited Interviews: No monthly limits
+📱 Responsive Design Testing
+Desktop (1200px+)
+Header layout looks good
+Interview questions are readable
+Modals center properly
+Buttons are appropriately sized
+Tablet (768px - 1199px)
+Navigation adapts
+Text remains readable
+Forms work properly
+Mobile (< 768px)
+Header collapses appropriately
+Touch targets are large enough
+Text input works on mobile keyboard
+Modals fit screen
+🔧 Error Handling Testing
+Network Issues
+Slow Connection: Test with throttled network
+Offline: Test behavior when offline
+API Failures: Should show user-friendly errors
+Input Validation
+Empty Answers: Try submitting empty responses
+Very Long Answers: Test with 1000+ character answers
+Special Characters: Test with emojis, symbols
+Edge Cases
+Browser Refresh: Refresh during interview
+Back Button: Use browser back button
+Multiple Tabs: Open app in multiple tabs
+📄 PDF Generation Testing
+Complete an interview
+Click "Download PDF Report"
+Verify PDF downloads
+Open PDF and check:
+All questions included
+All answers included
+All feedback included
+Scores are correct
+Formatting looks good
+ℹ️ About Page Testing
+Click "About" (info icon in header)
+Verify content loads
+Test "Back to Interview Coach" button
+Test email links work
+🎨 UI/UX Testing
+Visual Design
+Colors are consistent
+Icons load properly
+Animations are smooth
+Loading states are clear
+User Experience
+Navigation is intuitive
+Error messages are helpful
+Success states are clear
+App feels responsive
+🐛 Bug Reporting Template
+When you find issues, please report them like this:
+
+
+🐛 Bug Report
+
+**What happened:**
+[Describe the issue]
+
+**Expected behavior:**
+[What should have happened]
+
+**Steps to reproduce:**
+1. Go to...
+2. Click on...
+3. See error...
+
+**Browser:** Chrome/Firefox/Safari
+**Device:** Desktop/Mobile/Tablet
+**URL:** https://visionary-cactus-890825.netlify.app
+✅ Success Criteria
+The app passes testing if:
+
+Users can sign up and sign in
+Interview flow works end-to-end
+AI feedback is generated
+PDF reports download
+Subscription tiers work correctly
+App is responsive on all devices
+No critical errors occur
+Happy testing! 🚀
+
+Estimated testing time: 30-45 minutes for complete checklist

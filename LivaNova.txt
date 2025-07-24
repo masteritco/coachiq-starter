@@ -1,0 +1,27 @@
+LivaNova is a global medical technology company built on nearly five decades of experience and a relentless commitment to improving the lives of patients around the world. Our advanced technologies and breakthrough treatments provide meaningful solutions for the benefit of patients, healthcare professionals, and healthcare systems. The company is listed on the NASDAQ stock exchange under the ticker symbol “ LIVN .” LivaNova is headquartered in London (UK) with a presence in over 100 countries and a team of more than 3,000 employees worldwide.
+LivaNova Neuromodulation:
+LivaNova provides medical device solution to treat a variety of neurological condition such as epilepsy, depression, and obstructive sleep apnea. As pioneer in neuromodulation, our implantable devices go beyond traditional pharmaceutical treatments, to deliver mild electrical pulses to target nerves to treat chronic conditions. Our medical products improve the lives patients and their families.
+
+Position Summary
+This role both actively participates in the development of product and non-product (e.g., automated manufacturing test systems) software and firmware by serving as a core team member. The role will focus on our obstructive sleep apnea neuromodulation therapy, a rapidly growth area for LivaNova.
+Job Functions
+Serves as a core team member on software/firmware product development teams by providing technical leadership and direction. Responsible for the risk management file, compliance with design control regulations, development of design requirements, architecture specifications, and design verification/validation (including unit and integration testing).
+Chair the change control board within projects for change requests and defects identified during the course of development.
+Provide valuable technical feedback in code reviews.
+Lead (technical expert) and oversee/approve investigations of software/firmware related complaints, defects identified during development, or from manufacturing nonconformities, audit responses and CAPAs to identify root cause and corrective actions in a timely manner.
+Generates, maintains and updates risk management documentation throughout the life cycle of a product.
+Leads the post-market cybersecurity process by monitoring potential threats and initiating further review and analysis with security experts.
+Serves as a core team member for validation of software used in the manufacturing process by providing technical leadership and direction. Responsibilities include the completeness and accuracy of change impact assessments, validation compliance with regulation/procedures, change risk assessment sufficiency, and acceptance criteria.
+Works with and manages suppliers as needed during development to support overall program needs
+Ensures compliance with software / firmware development and non-product software validation procedures.
+Contributes to successful regulatory audits by coordinating back room / front room activities or serving as a subject matter expert.
+Knowledge, Skills and Abilities Required
+Experience with developing software or firmware in the medical device industry including demonstrated proficiency in meeting the requirements of IEC 62304.
+Develop and maintain strong, positive business relationships with key internal customers such as R&D, Clinical, Regulatory Affairs, and Operations to fulfill design development activities, support audits / inspections, and develop and implement plans that will ensure company compliance with regulatory requirements.
+Gain a full understanding and knowledge of how LivaNova devices are designed and manufactured, how they function, and how they deliver clinical benefit.
+Maintain and improve technical knowledge in software/firmware development and test to provide value added feedback for new product development, investigations, and product/process changes to ensure the safety and effectiveness of LivaNova devices.
+Collaborate with other areas within Quality to achieve quality objectives.
+Exhibit strong leadership skills showing ability to influence both peers and other team members.
+Exhibit Excellent written and verbal communication skills.
+Demonstrate an ability to prioritize and plan activities.
+Possesses in depth knowledge of pertinent regulations (e.g. ISO 13485, 21 CFR Part 820, etc.) to assure the documentation of all company-wide functions meet these requirements and, when necessary, identify compliant, effective and efficient approaches to fulfilling such requirements.
