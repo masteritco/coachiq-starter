@@ -59,10 +59,11 @@ export const supabase = (() => {
   );
 })();
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  subscription_tier: 'free' | 'starter' | 'pro' | 'enterprise';
-  created_at: string;
-  updated_at: string;
-}
+// UserProfile type definition (for reference)
+// {
+//   id: string;
+//   email: string;
+//   subscription_tier: 'free' | 'starter' | 'pro' | 'enterprise';
+//   created_at: string;
+//   updated_at: string;
+// }
