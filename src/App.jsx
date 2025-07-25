@@ -1,52 +1,157 @@
 import React, { useState } from 'react';
-import { Briefcase, ArrowRight, Trophy, MessageCircle, Send, User, Brain, RotateCcw } from 'lucide-react';
+import { Briefcase, ArrowRight, Trophy, MessageCircle, Send, Brain, RotateCcw, Download, User, LogOut } from 'lucide-react';
+import { useAuth } from './hooks/useAuth.js';
+import { authService } from './services/auth.js';
+import { interviewService } from './services/interviews.js';
+import { openaiService } from './services/openai.js';
 
 export default function App() {
+  const { user, profile, loading } = useAuth();
   const [stage, setStage] = useState('job-input');
   const [jobTitle, setJobTitle] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentSession, setCurrentSession] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [questions, setQuestions] = useState([]);
 
-  const questions = [
-    `Tell me about your experience relevant to this ${jobTitle} position.`,
-    'Describe a challenging project you worked on and how you overcame obstacles.',
-    'What interests you most about this role and our company?',
-    'How do you stay current with industry trends and best practices?'
-  ];
-
-  const handleJobSubmit = (e) => {
+  // Handle authentication
+  const handleAuth = async (e) => {
     e.preventDefault();
-    if (jobTitle.trim()) {
+    setAuthError('');
+    setIsLoading(true);
+
+    try {
+      let result;
+      if (authMode === 'signup') {
+        result = await authService.signUp(authEmail, authPassword);
+      } else {
+        result = await authService.signIn(authEmail, authPassword);
+      }
+
+      if (result.error) {
+        setAuthError(result.error);
+      } else {
+        setShowAuthModal(false);
+        setAuthEmail('');
+        setAuthPassword('');
+        if (authMode === 'signup') {
+          alert('Please check your email to verify your account!');
+        }
+      }
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await authService.signOut();
+    setStage('job-input');
+    setJobTitle('');
+    setCurrentQuestion(0);
+    setAnswers([]);
+    setCurrentAnswer('');
+    setCurrentSession(null);
+    setQuestions([]);
+  };
+
+  const handleJobSubmit = async (e) => {
+    e.preventDefault();
+    if (!jobTitle.trim()) return;
+
+    // Check if user is authenticated
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    // Check usage limits
+    if (profile) {
+      const usage = await interviewService.getMonthlyUsage(profile);
+      if (usage.used >= usage.limit) {
+        alert(`You've reached your monthly limit of ${usage.limit} interviews. Upgrade your plan for more interviews!`);
+        return;
+      }
+    }
+
+    setIsLoading(true);
+    try {
+      // Create interview session
+      const session = await interviewService.createSession(user.id, jobTitle);
+      setCurrentSession(session);
+
+      // Generate questions
+      const generatedQuestions = await openaiService.generateQuestions(
+        jobTitle, 
+        null, 
+        null, 
+        profile?.subscription_tier || 'free'
+      );
+      
+      setQuestions(generatedQuestions);
       setStage('interview');
+    } catch (error) {
+      console.error('Error starting interview:', error);
+      alert('Error starting interview. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleAnswerSubmit = async (e) => {
     e.preventDefault();
-    if (currentAnswer.trim()) {
-      setIsLoading(true);
-      
-      // Simulate AI processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newAnswers = [...answers, {
-        question: questions[currentQuestion],
+    if (!currentAnswer.trim()) return;
+
+    setIsLoading(true);
+    try {
+      // Get AI feedback
+      const feedbackResult = await openaiService.getFeedback(
+        questions[currentQuestion].text,
+        currentAnswer
+      );
+
+      const newAnswer = {
+        question: questions[currentQuestion].text,
         answer: currentAnswer,
-        score: Math.floor(Math.random() * 3) + 7, // Random score 7-9
-        feedback: `Good response! You provided relevant information and showed understanding of the question. Consider adding more specific examples to strengthen your answer. Remember to use the STAR method (Situation, Task, Action, Result) for behavioral questions.`
-      }];
-      
+        score: feedbackResult.score,
+        feedback: feedbackResult.feedback
+      };
+
+      const newAnswers = [...answers, newAnswer];
       setAnswers(newAnswers);
+
+      // Update session in database
+      if (currentSession) {
+        await interviewService.updateSession(currentSession.id, {
+          responses: newAnswers,
+          questions: questions
+        });
+      }
+
       setCurrentAnswer('');
-      setIsLoading(false);
-      
+
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
       } else {
+        // Complete the session
+        if (currentSession) {
+          await interviewService.completeSession(currentSession.id);
+        }
         setStage('results');
       }
+    } catch (error) {
+      console.error('Error processing answer:', error);
+      alert('Error processing your answer. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -57,11 +162,24 @@ export default function App() {
     setAnswers([]);
     setCurrentAnswer('');
     setIsLoading(false);
+    setCurrentSession(null);
+    setQuestions([]);
+    setAuthError('');
   };
 
   const downloadPDF = () => {
-    alert('PDF download is not available in demo mode. This would normally download a comprehensive interview report.');
+    alert('🎉 Demo Mode: PDF download would normally generate a comprehensive interview report with detailed feedback, improvement suggestions, and performance analytics. This feature is available in the full version of CoachIQ!');
   };
+
+  // Show loading spinner while auth is initializing
+  if (loading) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading CoachIQ...</p>
+      </div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,7 +198,31 @@ export default function App() {
             </button>
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600">Demo Mode</div>
-              <div className="text-sm text-blue-600 font-medium">Free Plan: 4/4 interviews</div>
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-blue-600 font-medium">
+                    {profile?.subscription_tier || 'free'} Plan
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">{user.email}</span>
+                    <button
+                      onClick={handleSignOut}
+                      className="p-1 hover:bg-gray-100 rounded"
+                      title="Sign Out"
+                    >
+                      <LogOut className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="text-sm text-blue-600 font-medium hover:text-blue-700"
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -117,9 +259,14 @@ export default function App() {
                 <button
                   type="submit"
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                  disabled={isLoading}
                 >
-                  <ArrowRight className="w-5 h-5" />
-                  Start Interview
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-5 h-5" />
+                  )}
+                  {isLoading ? 'Starting...' : 'Start Interview'}
                 </button>
               </div>
             </form>
@@ -196,7 +343,7 @@ export default function App() {
                     Interview Question #{currentQuestion + 1}
                   </h3>
                   <p className="text-gray-700 text-lg leading-relaxed">
-                    {questions[currentQuestion]}
+                    {questions[currentQuestion]?.text}
                   </p>
                 </div>
               </div>
@@ -265,7 +412,7 @@ export default function App() {
                   <h3 className="text-xl font-semibold text-gray-900">Overall Score</h3>
                 </div>
                 <div className="text-4xl font-bold text-blue-600 mb-2">
-                  {(answers.reduce((sum, a) => sum + a.score, 0) / answers.length).toFixed(1)}/10
+                  {answers.length > 0 ? (answers.reduce((sum, a) => sum + a.score, 0) / answers.length).toFixed(1) : '0'}/10
                 </div>
                 <p className="text-gray-600">Average across all questions</p>
               </div>
@@ -308,15 +455,15 @@ export default function App() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={downloadPDF}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium shadow-sm"
               >
-                <ArrowRight className="w-5 h-5" />
-                Download PDF Report (Demo)
+                <Download className="w-5 h-5" />
+                Download PDF Report
               </button>
               
               <button
                 onClick={startOver}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 font-medium"
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 font-medium shadow-sm"
               >
                 <RotateCcw className="w-5 h-5" />
                 Start New Interview
@@ -325,6 +472,95 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <User className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {authMode === 'signup' ? 'Create Account' : 'Welcome Back'}
+                    </h2>
+                    <p className="text-gray-600 text-sm">
+                      {authMode === 'signup' ? 'Sign up for CoachIQ' : 'Sign in to your account'}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowAuthModal(false)} 
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{authError}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleAuth} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? 'Processing...' : (authMode === 'signup' ? 'Create Account' : 'Sign In')}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-gray-600">
+                  {authMode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
+                  <button
+                    onClick={() => setAuthMode(authMode === 'signup' ? 'signin' : 'signup')}
+                    className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    {authMode === 'signup' ? 'Sign In' : 'Sign Up'}
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-16">
@@ -354,7 +590,7 @@ export default function App() {
 
             <div className="text-center md:text-right">
               <p className="text-sm text-gray-500">
-                © 2025 CoachIQ. Demo Version - Built for job seekers worldwide
+                © 2025 CoachIQ. Built with ❤️ for job seekers worldwide
               </p>
             </div>
           </div>
