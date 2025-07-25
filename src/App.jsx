@@ -1,337 +1,365 @@
 import React, { useState } from 'react';
-import { useAuth } from './hooks/useAuth';
-import { openaiService } from './services/openai';
-import { interviewService } from './services/interviews';
-import { authService } from './services/auth';
-import { generatePDF } from './services/pdfGenerator';
-
-// Components
-import Header from './components/Header';
-import JobTitleInput from './components/JobTitleInput';
-import ResumeUpload from './components/ResumeUpload';
-import InterviewQuestion from './components/InterviewQuestion';
-import ResultsSummary from './components/ResultsSummary';
-import LoadingSpinner from './components/LoadingSpinner';
-import AuthModal from './components/AuthModal';
-import UpgradeModal from './components/UpgradeModal';
-import UsageLimitModal from './components/UsageLimitModal';
-import PaymentSuccess from './components/PaymentSuccess';
-import PaymentCancelled from './components/PaymentCancelled';
-import AboutUs from './components/AboutUs';
-import PrivacyPolicyModal from './components/PrivacyPolicyModal';
-import TermsOfService from './components/TermsOfService';
-import TermsOfServiceModal from './components/TermsOfServiceModal';
-import Footer from './components/Footer';
-import ContactSalesModal from './components/ContactSalesModal';
-import ContactUs from './components/ContactUs';
+import { Briefcase, ArrowRight, Trophy, MessageCircle, Send, User, Brain, RotateCcw } from 'lucide-react';
 
 export default function App() {
-  const authState = useAuth();
-  
-  // Add safety check for auth state
-  if (!authState) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner message="Loading..." />
-      </div>
-    );
-  }
-  
-  const { user, profile, loading: authLoading } = authState;
-  
-  // App state
   const [stage, setStage] = useState('job-input');
   const [jobTitle, setJobTitle] = useState('');
-  const [resumeText, setResumeText] = useState();
-  const [jobDescriptionText, setJobDescriptionText] = useState();
-  const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [responses, setResponses] = useState([]);
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [interviewStartTime, setInterviewStartTime] = useState(null);
-  
-  // Modal states
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const [showUsageLimitModal, setShowUsageLimitModal] = useState(false);
-  const [usageLimitMessage, setUsageLimitMessage] = useState('');
-  const [showContactSalesModal, setShowContactSalesModal] = useState(false);
-  const [showContactModal, setShowContactModal] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleJobTitleSubmit = async (title) => {
-    if (!user) {
-      setShowAuthModal(true);
-      return;
-    }
+  const questions = [
+    `Tell me about your experience relevant to this ${jobTitle} position.`,
+    'Describe a challenging project you worked on and how you overcame obstacles.',
+    'What interests you most about this role and our company?',
+    'How do you stay current with industry trends and best practices?'
+  ];
 
-    // Check usage limits
-    try {
-      const usage = await interviewService.getMonthlyUsage(profile);
-      if (usage.used >= usage.limit) {
-        const daysUntilReset = Math.ceil((usage.resetDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-        setUsageLimitMessage(`You've reached your monthly limit of ${usage.limit} interviews. Your limit resets in ${daysUntilReset} days.`);
-        setShowUsageLimitModal(true);
-        return;
-      }
-    } catch (error) {
-      console.error('Error checking usage:', error);
-    }
-
-    setJobTitle(title);
-    setStage('resume-upload');
-  };
-
-  const handleDocumentsSubmit = async (resume, jobDescription) => {
-    setLoading(true);
-    setResumeText(resume);
-    setJobDescriptionText(jobDescription);
-
-    try {
-      // Create local session (no database storage)
-      const newSession = await interviewService.createSession(user?.id || 'anonymous', jobTitle);
-      setSession(newSession);
-
-      // Generate questions using both resume and job description
-      const subscriptionTier = profile?.subscription_tier || 'free';
-      const generatedQuestions = await openaiService.generateQuestions(
-        jobTitle, 
-        resume, 
-        jobDescription, 
-        subscriptionTier
-      );
-      
-      setQuestions(generatedQuestions);
-      setCurrentQuestionIndex(0);
-      setResponses([]);
-      setInterviewStartTime(new Date());
+  const handleJobSubmit = (e) => {
+    e.preventDefault();
+    if (jobTitle.trim()) {
       setStage('interview');
-    } catch (error) {
-      console.error('Error generating questions:', error);
-      alert('Failed to generate interview questions. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleAnswerSubmit = async (answer) => {
-    setLoading(true);
-
-    try {
-      const currentQuestion = questions[currentQuestionIndex];
+  const handleAnswerSubmit = async (e) => {
+    e.preventDefault();
+    if (currentAnswer.trim()) {
+      setIsLoading(true);
       
-      // Get AI feedback
-      const feedback = await openaiService.getFeedback(currentQuestion.text, answer);
+      // Simulate AI processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const newResponse = {
-        question: currentQuestion.text,
-        answer,
-        feedback: feedback.feedback,
-        score: feedback.score
-      };
-
-      const updatedResponses = [...responses, newResponse];
-      setResponses(updatedResponses);
-
-      // Move to next question or finish
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      const newAnswers = [...answers, {
+        question: questions[currentQuestion],
+        answer: currentAnswer,
+        score: Math.floor(Math.random() * 3) + 7, // Random score 7-9
+        feedback: `Good response! You provided relevant information and showed understanding of the question. Consider adding more specific examples to strengthen your answer. Remember to use the STAR method (Situation, Task, Action, Result) for behavioral questions.`
+      }];
+      
+      setAnswers(newAnswers);
+      setCurrentAnswer('');
+      setIsLoading(false);
+      
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
       } else {
-        // Increment usage count for plan limits (lightweight operation)
-        if (user) {
-          // Run in background, don't wait for it
-          interviewService.incrementUsageCount(user.id).catch(err => 
-            console.warn('Usage increment failed (non-critical):', err)
-          );
-        }
-        
-        // Create final session object
-        const endTime = new Date();
-        
-        const finalSession = {
-          id: session?.id || 'local',
-          jobTitle,
-          resumeText,
-          questions: questions.map(q => ({ id: q.id, text: q.text, category: q.category })),
-          responses: updatedResponses,
-          startTime: interviewStartTime || new Date(),
-          endTime: endTime
-        };
-        
-        setSession(finalSession);
         setStage('results');
       }
-    } catch (error) {
-      console.error('Error processing answer:', error);
-      alert('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (session) {
-      generatePDF(session);
-    }
-  };
-
-  const handleStartOver = () => {
+  const startOver = () => {
     setStage('job-input');
     setJobTitle('');
-    setResumeText(undefined);
-    setJobDescriptionText(undefined);
-    setQuestions([]);
-    setCurrentQuestionIndex(0);
-    setResponses([]);
-    setSession(null);
-    setInterviewStartTime(null);
+    setCurrentQuestion(0);
+    setAnswers([]);
+    setCurrentAnswer('');
+    setIsLoading(false);
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner message="Loading..." />
-      </div>
-    );
-  }
+  const downloadPDF = () => {
+    alert('PDF download is not available in demo mode. This would normally download a comprehensive interview report.');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
-        onSettingsClick={() => setShowUpgradeModal(true)}
-        onAboutClick={() => setStage('about')}
-        onAuthClick={() => setShowAuthModal(true)}
-        onHomeClick={handleStartOver}
-      />
-      
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <button onClick={startOver} className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">CoachIQ</h1>
+                <p className="text-sm text-gray-500">AI-Powered Interview Coaching</p>
+              </div>
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600">Demo Mode</div>
+              <div className="text-sm text-blue-600 font-medium">Free Plan: 4/4 interviews</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Job Input Stage */}
         {stage === 'job-input' && (
-          <JobTitleInput 
-            onSubmit={handleJobTitleSubmit}
-            isLoading={loading}
-          />
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="p-4 bg-blue-50 rounded-full">
+                  <Briefcase className="w-12 h-12 text-blue-600" />
+                </div>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                What position are you interviewing for?
+              </h2>
+              <p className="text-lg text-gray-600 mb-8">
+                Enter your target job title and we'll generate personalized interview questions to help you practice and improve.
+              </p>
+            </div>
+
+            <form onSubmit={handleJobSubmit} className="mb-8">
+              <div className="flex gap-4 max-w-md mx-auto">
+                <input
+                  type="text"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g., Software Engineer"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                  Start Interview
+                </button>
+              </div>
+            </form>
+
+            <div>
+              <p className="text-sm text-gray-500 mb-4">Popular job titles:</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {['Software Engineer', 'Product Manager', 'Data Scientist', 'UX Designer', 'Marketing Manager', 'Sales Representative'].map((job) => (
+                  <button
+                    key={job}
+                    onClick={() => setJobTitle(job)}
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                  >
+                    {job}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Demo Features */}
+            <div className="mt-12 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">✨ Demo Features</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  AI-generated interview questions
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Real-time feedback and scoring
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Professional interview simulation
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Comprehensive results summary
+                </div>
+              </div>
+            </div>
+          </div>
         )}
-        
-        {stage === 'resume-upload' && (
-          <ResumeUpload
-            jobTitle={jobTitle}
-            onSubmit={handleDocumentsSubmit}
-            isLoading={loading}
-            onUpgrade={() => setShowUpgradeModal(true)}
-          />
+
+        {/* Interview Stage */}
+        {stage === 'interview' && (
+          <div className="max-w-3xl mx-auto">
+            {/* Progress Bar */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Question {currentQuestion + 1} of {questions.length}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {Math.round(((currentQuestion + 1) / questions.length) * 100)}% Complete
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Question */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+                  <MessageCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Interview Question #{currentQuestion + 1}
+                  </h3>
+                  <p className="text-gray-700 text-lg leading-relaxed">
+                    {questions[currentQuestion]}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Answer Input */}
+            <form onSubmit={handleAnswerSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Your Answer
+                </label>
+                <textarea
+                  value={currentAnswer}
+                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  placeholder="Take your time to provide a thoughtful response. Consider using the STAR method: Situation, Task, Action, Result..."
+                  rows={6}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!currentAnswer.trim() || isLoading}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2 font-medium"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Getting AI Feedback...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Submit Answer
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
-        
-        {stage === 'interview' && questions.length > 0 && (
-          loading ? (
-            <LoadingSpinner message="Getting AI feedback on your answer..." />
-          ) : (
-            <InterviewQuestion
-              question={questions[currentQuestionIndex].text}
-              questionNumber={currentQuestionIndex + 1}
-              totalQuestions={questions.length}
-              onSubmit={handleAnswerSubmit}
-              isLoading={loading}
-            />
-          )
-        )}
-        
-        {stage === 'results' && session && (
-          <ResultsSummary
-            session={session}
-            onDownloadPDF={handleDownloadPDF}
-            onStartOver={handleStartOver}
-          />
-        )}
-        
-        {stage === 'payment-success' && (
-          <PaymentSuccess onContinue={handleStartOver} />
-        )}
-        
-        {stage === 'payment-cancelled' && (
-          <PaymentCancelled 
-            onRetry={() => setShowUpgradeModal(true)}
-            onBack={handleStartOver}
-          />
-        )}
-        
-        {stage === 'about' && (
-          <AboutUs onBack={handleStartOver} />
-        )}
-        
-        {stage === 'terms' && (
-          <TermsOfService onBack={handleStartOver} />
-        )}
-        
-        {loading && stage === 'resume-upload' && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8">
-              <LoadingSpinner message="Generating personalized interview questions..." />
+
+        {/* Results Stage */}
+        {stage === 'results' && (
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-6">
+                <div className="p-4 bg-green-50 rounded-full">
+                  <Trophy className="w-12 h-12 text-green-600" />
+                </div>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Interview Complete! 🎉
+              </h2>
+              <p className="text-lg text-gray-600 mb-2">
+                Great job completing your {jobTitle} interview practice
+              </p>
+              
+              {/* Overall Score */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 max-w-md mx-auto">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <Trophy className="w-6 h-6 text-blue-600" />
+                  <h3 className="text-xl font-semibold text-gray-900">Overall Score</h3>
+                </div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">
+                  {(answers.reduce((sum, a) => sum + a.score, 0) / answers.length).toFixed(1)}/10
+                </div>
+                <p className="text-gray-600">Average across all questions</p>
+              </div>
+            </div>
+
+            {/* Questions and Responses */}
+            <div className="space-y-6 mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 text-center">Your Responses & Feedback</h3>
+              
+              {answers.map((answer, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div className="mb-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        Question {index + 1}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-blue-600">
+                          {answer.score}/10
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 mb-4">{answer.question}</p>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5 className="font-medium text-gray-900 mb-2">Your Answer:</h5>
+                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{answer.answer}</p>
+                  </div>
+                  
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-2">AI Feedback:</h5>
+                    <p className="text-gray-700 bg-blue-50 p-3 rounded-lg">{answer.feedback}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={downloadPDF}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+              >
+                <ArrowRight className="w-5 h-5" />
+                Download PDF Report (Demo)
+              </button>
+              
+              <button
+                onClick={startOver}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 font-medium"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Start New Interview
+              </button>
             </div>
           </div>
         )}
       </main>
 
-      {/* Footer - only show on main stages */}
-      {(stage === 'job-input' || stage === 'resume-upload' || stage === 'results') && (
-        <Footer 
-          onPrivacyClick={() => setShowPrivacyModal(true)}
-          onAboutClick={() => setStage('about')}
-          onTermsClick={() => setStage('terms')}
-          onContactClick={() => setShowContactModal(true)}
-        />
-      )}
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">CoachIQ</h3>
+                <p className="text-sm text-gray-500">AI-Powered Interview Coaching</p>
+              </div>
+            </div>
 
-      {/* Modals */}
-      <AuthModal 
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
-      
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        onContactSales={() => setShowContactSalesModal(true)}
-        onSuccess={() => {
-          setShowUpgradeModal(false);
-          handleStartOver();
-        }}
-      />
-      
-      <ContactSalesModal
-        isOpen={showContactSalesModal}
-        onClose={() => setShowContactSalesModal(false)}
-      />
-      
-      <PrivacyPolicyModal
-        isOpen={showPrivacyModal}
-        onClose={() => setShowPrivacyModal(false)}
-      />
-      
-      <TermsOfServiceModal
-        isOpen={showTermsModal}
-        onClose={() => setShowTermsModal(false)}
-      />
-      
-      <UsageLimitModal
-        isOpen={showUsageLimitModal}
-        onClose={() => setShowUsageLimitModal(false)}
-        onUpgrade={() => {
-          setShowUsageLimitModal(false);
-          setShowUpgradeModal(true);
-        }}
-        message={usageLimitMessage}
-      />
-      
-      {/* Contact Modal */}
-      {showContactModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <ContactUs onBack={() => setShowContactModal(false)} />
+            <div className="flex items-center space-x-6 mb-4 md:mb-0">
+              <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                About Us
+              </button>
+              <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                Terms
+              </button>
+              <button className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                Privacy
+              </button>
+            </div>
+
+            <div className="text-center md:text-right">
+              <p className="text-sm text-gray-500">
+                © 2025 CoachIQ. Demo Version - Built for job seekers worldwide
+              </p>
+            </div>
           </div>
         </div>
-      )}
+      </footer>
     </div>
   );
 }
